@@ -1,0 +1,236 @@
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  align-items: center;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(72, 133, 255, 0.18), transparent 28rem),
+    linear-gradient(145deg, #05070d 0%, #111827 52%, #05070d 100%);
+  color: #f8fafc;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(320px, 680px) minmax(260px, 360px);
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.game-column {
+  display: grid;
+  gap: 18px;
+  justify-items: start;
+}
+
+.game-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.eyebrow {
+  color: #93c5fd;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+h1,
+h2 {
+  color: #ffffff;
+  line-height: 1.05;
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 4.8rem);
+  max-width: 10ch;
+}
+
+h2 {
+  font-size: 1.6rem;
+}
+
+.game-frame {
+  aspect-ratio: 1;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  max-height: min(72vh, 680px);
+  max-width: min(72vh, 680px);
+  overflow: hidden;
+  position: relative;
+  width: min(100%, 680px);
+}
+
+.game-frame:fullscreen {
+  align-items: center;
+  background: #000;
+  border: 0;
+  border-radius: 0;
+  display: grid;
+  height: 100vh;
+  justify-items: center;
+  max-height: none;
+  max-width: none;
+  width: 100vw;
+}
+
+.game-frame:fullscreen .game-canvas {
+  height: min(100vh, 100vw);
+  width: min(100vh, 100vw);
+}
+
+.game-canvas {
+  background: #000;
+  display: block;
+  height: 100%;
+  outline: none;
+  width: 100%;
+}
+
+.game-start-layer {
+  align-items: center;
+  background: rgba(3, 7, 18, 0.78);
+  border: 0;
+  color: #ffffff;
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  inset: 0;
+  padding: 24px;
+  position: absolute;
+  text-align: center;
+  transition: opacity 180ms ease, visibility 180ms ease;
+  z-index: 2;
+}
+
+.game-start-layer span {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  display: inline-block;
+  font-size: 1.2rem;
+  font-weight: 800;
+  justify-self: center;
+  padding: 14px 18px;
+}
+
+.game-start-layer[data-hidden="true"] {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.key-panel {
+  align-self: center;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.key-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.key-button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  color: #f8fafc;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  min-height: 74px;
+  padding: 12px;
+  text-align: left;
+  touch-action: none;
+}
+
+.key-button:hover:not(:disabled),
+.key-button:focus-visible:not(:disabled) {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: rgba(147, 197, 253, 0.72);
+  outline: none;
+}
+
+.key-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.key-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.key-button strong {
+  font-size: 1rem;
+}
+
+.key-button span {
+  color: #cbd5e1;
+  font-size: 0.82rem;
+}
+
+.fullscreen-toggle {
+  background: #ffffff;
+  border: 0;
+  border-radius: 8px;
+  bottom: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  color: #020617;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 13px 18px;
+  position: fixed;
+  right: 20px;
+  z-index: 10;
+}
+
+.fullscreen-toggle:hover,
+.fullscreen-toggle:focus-visible {
+  background: #bfdbfe;
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    align-items: start;
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+
+  h1 {
+    max-width: 14ch;
+  }
+
+  .game-frame {
+    max-height: none;
+    max-width: 100%;
+  }
+
+  .key-panel {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-shell {
+    gap: 18px;
+    padding: 14px 14px 76px;
+  }
+
+  .key-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fullscreen-toggle {
+    bottom: 12px;
+    right: 12px;
+  }
+}
