@@ -1,5 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Crosshair,
+  Maximize2,
+  Minimize2,
+  Pause,
+  Play,
+  RotateCcw,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import "./App.css";
 
 type GameStatus = "idle" | "loading" | "ready" | "error";
@@ -19,6 +30,12 @@ type AirplaneModule = {
   setStatus?: (text: string) => void;
 };
 
+type KeyBinding = {
+  label: string;
+  code: number;
+  Icon: LucideIcon;
+};
+
 declare global {
   interface Window {
     Module?: AirplaneModule;
@@ -26,13 +43,13 @@ declare global {
   }
 }
 
-const keyBindings = [
-  { label: "Left", detail: "ArrowLeft / A", code: 263 },
-  { label: "Right", detail: "ArrowRight / D", code: 262 },
-  { label: "Shoot", detail: "Space", code: 32 },
-  { label: "Replay", detail: "Enter", code: 257 },
-  { label: "Pause", detail: "Escape", code: 256 },
-] as const;
+const keyBindings: KeyBinding[] = [
+  { label: "Move left", code: 263, Icon: ArrowLeft },
+  { label: "Move right", code: 262, Icon: ArrowRight },
+  { label: "Shoot", code: 32, Icon: Crosshair },
+  { label: "Replay", code: 257, Icon: RotateCcw },
+  { label: "Pause", code: 256, Icon: Pause },
+];
 
 const browserHandledKeys = new Set([
   "ArrowLeft",
@@ -55,11 +72,10 @@ function GameShell() {
   const gameFrameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [status, setStatus] = useState<GameStatus>("idle");
-  const [statusText, setStatusText] = useState("Click the square to start");
+  const [statusText, setStatusText] = useState("Play");
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const canSendInput = status === "ready";
-  const isBooting = status === "loading";
 
   useEffect(() => {
     const syncFullscreen = () => {
@@ -93,14 +109,14 @@ function GameShell() {
     }
 
     setStatus("loading");
-    setStatusText("Loading game assets...");
+    setStatusText("Loading");
 
     window.Module = {
       canvas: canvasRef.current,
       locateFile: (path: string) => `/game/${path}`,
       onRuntimeInitialized: () => {
         setStatus("ready");
-        setStatusText("Game running");
+        setStatusText("Ready");
         canvasRef.current?.focus();
       },
       print: (text: string) => console.log(text),
@@ -112,7 +128,7 @@ function GameShell() {
 
     if (window.airplaneGameScriptLoaded) {
       setStatus("ready");
-      setStatusText("Game running");
+      setStatusText("Ready");
       canvasRef.current.focus();
       return;
     }
@@ -125,7 +141,7 @@ function GameShell() {
     };
     script.onerror = () => {
       setStatus("error");
-      setStatusText("Could not load /game/airplane.js");
+      setStatusText("Failed");
     };
     document.body.appendChild(script);
   }, [status]);
@@ -143,66 +159,23 @@ function GameShell() {
     canvasRef.current?.focus();
   }, []);
 
-  const gameTitle = useMemo(() => {
-    if (status === "ready") return "Airplane Game";
-    if (status === "loading") return "Preparing Airplane Game";
-    if (status === "error") return "Game load failed";
-    return "Click To Launch Airplane Game";
-  }, [status]);
-
   return (
     <main className="app-shell">
-      <section className="hero-panel" aria-labelledby="game-title">
-        <div className="brand-row">
-          <span className="brand-mark">A2D</span>
-          <span>Airplane 2D</span>
-        </div>
+      <header className="top-line">
+        <h1>Airplane 2D</h1>
+        <span className={`status-line status-${status}`}>{statusText}</span>
+      </header>
 
-        <div className="hero-copy">
-          <p className="eyebrow">Raylib C game in React</p>
-          <h1 id="game-title">Launch. Dodge. Shoot.</h1>
-          <p className="hero-text">
-            A fast browser build of the airplane shooter. Click play and the C
-            game boots directly inside the page.
-          </p>
-        </div>
-
-        <div className="hero-actions">
-          <button
-            className="primary-action"
-            disabled={isBooting}
-            onClick={startGame}
-            type="button"
-          >
-            {status === "ready" ? "Focus Game" : isBooting ? "Loading..." : "Play Now"}
-          </button>
-          <span className={`status-pill status-${status}`}>{statusText}</span>
-        </div>
-
-        <div className="quick-guide" aria-label="Quick controls">
-          <span>Move: A/D or Arrows</span>
-          <span>Shoot: Space</span>
-          <span>Replay: Enter</span>
-        </div>
-      </section>
-
-      <section className="game-column" aria-label={gameTitle}>
-        <GameCanvas
-          canvasRef={canvasRef}
-          frameRef={gameFrameRef}
-          isFullscreen={isFullscreen}
-          onToggleFullscreen={toggleFullscreen}
-          status={status}
-          statusText={statusText}
-          onStart={startGame}
-        />
-      </section>
-
-      <KeyBindingPanel
-        disabled={!canSendInput}
+      <GameCanvas
+        canvasRef={canvasRef}
+        frameRef={gameFrameRef}
+        isFullscreen={isFullscreen}
+        onStart={startGame}
+        onToggleFullscreen={toggleFullscreen}
         status={status}
-        onKeyChange={sendGameKey}
       />
+
+      <KeyToolbar disabled={!canSendInput} onKeyChange={sendGameKey} />
     </main>
   );
 }
@@ -211,37 +184,37 @@ type GameCanvasProps = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   frameRef: RefObject<HTMLDivElement | null>;
   isFullscreen: boolean;
+  onStart: () => void;
   onToggleFullscreen: () => void;
   status: GameStatus;
-  statusText: string;
-  onStart: () => void;
 };
 
 function GameCanvas({
   canvasRef,
   frameRef,
   isFullscreen,
+  onStart,
   onToggleFullscreen,
   status,
-  statusText,
-  onStart,
 }: GameCanvasProps) {
   return (
-    <div
+    <section
       ref={frameRef}
       className={`game-frame ${isFullscreen ? "is-fullscreen" : ""}`}
+      aria-label="Airplane game"
     >
       <button
+        aria-label="Play game"
         className="game-start-layer"
         data-hidden={status === "ready"}
+        disabled={status === "loading"}
         onClick={onStart}
+        title="Play"
         type="button"
       >
-        <span className="start-card">
-          <strong>{status === "loading" ? "Booting game..." : "Click to play"}</strong>
-          <small>{statusText}</small>
-        </span>
+        <Play aria-hidden="true" size={64} strokeWidth={1.8} />
       </button>
+
       <canvas
         ref={canvasRef}
         id="canvas"
@@ -250,21 +223,32 @@ function GameCanvas({
         tabIndex={0}
         width={600}
       />
-      <FullscreenToggle
-        isFullscreen={isFullscreen}
-        onToggle={onToggleFullscreen}
-      />
-    </div>
+
+      {status === "ready" && (
+        <button
+          aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          className="fullscreen-toggle"
+          onClick={onToggleFullscreen}
+          title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          type="button"
+        >
+          {isFullscreen ? (
+            <Minimize2 aria-hidden="true" size={24} />
+          ) : (
+            <Maximize2 aria-hidden="true" size={24} />
+          )}
+        </button>
+      )}
+    </section>
   );
 }
 
-type KeyBindingPanelProps = {
+type KeyToolbarProps = {
   disabled: boolean;
-  status: GameStatus;
   onKeyChange: (code: number, isDown: boolean) => void;
 };
 
-function KeyBindingPanel({ disabled, status, onKeyChange }: KeyBindingPanelProps) {
+function KeyToolbar({ disabled, onKeyChange }: KeyToolbarProps) {
   const releaseKey = useCallback(
     (code: number) => {
       onKeyChange(code, false);
@@ -273,60 +257,36 @@ function KeyBindingPanel({ disabled, status, onKeyChange }: KeyBindingPanelProps
   );
 
   return (
-    <aside className="key-panel" aria-label="Game keybindings">
-      <div>
-        <p className="eyebrow">Controls</p>
-        <h2>Browser Keybinds</h2>
-        <p className="panel-note">
-          {status === "ready"
-            ? "Hold a button here or use your keyboard while the game is focused."
-            : "Start the game once to enable the browser control buttons."}
-        </p>
-      </div>
-
-      <div className="key-grid">
-        {keyBindings.map((binding) => (
-          <button
-            className="key-button"
-            disabled={disabled}
-            key={binding.label}
-            onBlur={() => releaseKey(binding.code)}
-            onContextMenu={(event) => event.preventDefault()}
-            onKeyDown={(event) => {
-              if (event.key === " " || event.key === "Enter") {
-                event.preventDefault();
-              }
-            }}
-            onMouseDown={() => onKeyChange(binding.code, true)}
-            onMouseLeave={() => releaseKey(binding.code)}
-            onMouseUp={() => releaseKey(binding.code)}
-            onTouchCancel={() => releaseKey(binding.code)}
-            onTouchEnd={() => releaseKey(binding.code)}
-            onTouchStart={(event) => {
+    <nav className="key-toolbar" aria-label="Game controls">
+      {keyBindings.map(({ code, Icon, label }) => (
+        <button
+          aria-label={label}
+          className="key-button"
+          disabled={disabled}
+          key={label}
+          onBlur={() => releaseKey(code)}
+          onContextMenu={(event) => event.preventDefault()}
+          onKeyDown={(event) => {
+            if (event.key === " " || event.key === "Enter") {
               event.preventDefault();
-              onKeyChange(binding.code, true);
-            }}
-            type="button"
-          >
-            <strong>{binding.label}</strong>
-            <span>{binding.detail}</span>
-          </button>
-        ))}
-      </div>
-    </aside>
-  );
-}
-
-type FullscreenToggleProps = {
-  isFullscreen: boolean;
-  onToggle: () => void;
-};
-
-function FullscreenToggle({ isFullscreen, onToggle }: FullscreenToggleProps) {
-  return (
-    <button className="fullscreen-toggle" onClick={onToggle} type="button">
-      {isFullscreen ? "Window" : "Fullscreen"}
-    </button>
+            }
+          }}
+          onMouseDown={() => onKeyChange(code, true)}
+          onMouseLeave={() => releaseKey(code)}
+          onMouseUp={() => releaseKey(code)}
+          onTouchCancel={() => releaseKey(code)}
+          onTouchEnd={() => releaseKey(code)}
+          onTouchStart={(event) => {
+            event.preventDefault();
+            onKeyChange(code, true);
+          }}
+          title={label}
+          type="button"
+        >
+          <Icon aria-hidden="true" size={28} strokeWidth={2.2} />
+        </button>
+      ))}
+    </nav>
   );
 }
 
