@@ -31,9 +31,10 @@ type AirplaneModule = {
 };
 
 type KeyBinding = {
-  label: string;
+  action: string;
   code: number;
   Icon: LucideIcon;
+  keys: string;
 };
 
 declare global {
@@ -44,11 +45,11 @@ declare global {
 }
 
 const keyBindings: KeyBinding[] = [
-  { label: "Move left", code: 263, Icon: ArrowLeft },
-  { label: "Move right", code: 262, Icon: ArrowRight },
-  { label: "Shoot", code: 32, Icon: Crosshair },
-  { label: "Replay", code: 257, Icon: RotateCcw },
-  { label: "Pause", code: 256, Icon: Pause },
+  { action: "Move left", code: 263, Icon: ArrowLeft, keys: "ArrowLeft / A" },
+  { action: "Move right", code: 262, Icon: ArrowRight, keys: "ArrowRight / D" },
+  { action: "Shoot", code: 32, Icon: Crosshair, keys: "Space" },
+  { action: "Replay", code: 257, Icon: RotateCcw, keys: "Enter" },
+  { action: "Pause", code: 256, Icon: Pause, keys: "Escape" },
 ];
 
 const browserHandledKeys = new Set([
@@ -161,11 +162,6 @@ function GameShell() {
 
   return (
     <main className="app-shell">
-      <header className="top-line">
-        <h1>Airplane 2D</h1>
-        <span className={`status-line status-${status}`}>{statusText}</span>
-      </header>
-
       <GameCanvas
         canvasRef={canvasRef}
         frameRef={gameFrameRef}
@@ -173,6 +169,7 @@ function GameShell() {
         onStart={startGame}
         onToggleFullscreen={toggleFullscreen}
         status={status}
+        statusText={statusText}
       />
 
       <KeyToolbar disabled={!canSendInput} onKeyChange={sendGameKey} />
@@ -187,6 +184,7 @@ type GameCanvasProps = {
   onStart: () => void;
   onToggleFullscreen: () => void;
   status: GameStatus;
+  statusText: string;
 };
 
 function GameCanvas({
@@ -196,6 +194,7 @@ function GameCanvas({
   onStart,
   onToggleFullscreen,
   status,
+  statusText,
 }: GameCanvasProps) {
   return (
     <section
@@ -212,7 +211,10 @@ function GameCanvas({
         title="Play"
         type="button"
       >
-        <Play aria-hidden="true" size={64} strokeWidth={1.8} />
+        <span className="play-state">
+          <Play aria-hidden="true" size={68} strokeWidth={1.8} />
+          <span>{status === "idle" ? "Play" : statusText}</span>
+        </span>
       </button>
 
       <canvas
@@ -258,12 +260,12 @@ function KeyToolbar({ disabled, onKeyChange }: KeyToolbarProps) {
 
   return (
     <nav className="key-toolbar" aria-label="Game controls">
-      {keyBindings.map(({ code, Icon, label }) => (
+      {keyBindings.map(({ action, code, Icon, keys }) => (
         <button
-          aria-label={label}
+          aria-label={action}
           className="key-button"
           disabled={disabled}
-          key={label}
+          key={action}
           onBlur={() => releaseKey(code)}
           onContextMenu={(event) => event.preventDefault()}
           onKeyDown={(event) => {
@@ -280,10 +282,14 @@ function KeyToolbar({ disabled, onKeyChange }: KeyToolbarProps) {
             event.preventDefault();
             onKeyChange(code, true);
           }}
-          title={label}
+          title={`${action}: ${keys}`}
           type="button"
         >
-          <Icon aria-hidden="true" size={28} strokeWidth={2.2} />
+          <Icon aria-hidden="true" size={26} strokeWidth={2.2} />
+          <span className="key-copy">
+            <strong>{action}</strong>
+            <span>{keys}</span>
+          </span>
         </button>
       ))}
     </nav>
