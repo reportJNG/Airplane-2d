@@ -59,6 +59,7 @@ function GameShell() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const canSendInput = status === "ready";
+  const isBooting = status === "loading";
 
   useEffect(() => {
     const syncFullscreen = () => {
@@ -151,12 +152,41 @@ function GameShell() {
 
   return (
     <main className="app-shell">
-      <section className="game-column" aria-labelledby="game-title">
-        <div className="game-heading">
-          <p className="eyebrow">Raylib C game in React</p>
-          <h1 id="game-title">{gameTitle}</h1>
+      <section className="hero-panel" aria-labelledby="game-title">
+        <div className="brand-row">
+          <span className="brand-mark">A2D</span>
+          <span>Airplane 2D</span>
         </div>
 
+        <div className="hero-copy">
+          <p className="eyebrow">Raylib C game in React</p>
+          <h1 id="game-title">Launch. Dodge. Shoot.</h1>
+          <p className="hero-text">
+            A fast browser build of the airplane shooter. Click play and the C
+            game boots directly inside the page.
+          </p>
+        </div>
+
+        <div className="hero-actions">
+          <button
+            className="primary-action"
+            disabled={isBooting}
+            onClick={startGame}
+            type="button"
+          >
+            {status === "ready" ? "Focus Game" : isBooting ? "Loading..." : "Play Now"}
+          </button>
+          <span className={`status-pill status-${status}`}>{statusText}</span>
+        </div>
+
+        <div className="quick-guide" aria-label="Quick controls">
+          <span>Move: A/D or Arrows</span>
+          <span>Shoot: Space</span>
+          <span>Replay: Enter</span>
+        </div>
+      </section>
+
+      <section className="game-column" aria-label={gameTitle}>
         <GameCanvas
           canvasRef={canvasRef}
           frameRef={gameFrameRef}
@@ -170,6 +200,7 @@ function GameShell() {
 
       <KeyBindingPanel
         disabled={!canSendInput}
+        status={status}
         onKeyChange={sendGameKey}
       />
     </main>
@@ -206,7 +237,10 @@ function GameCanvas({
         onClick={onStart}
         type="button"
       >
-        <span>{statusText}</span>
+        <span className="start-card">
+          <strong>{status === "loading" ? "Booting game..." : "Click to play"}</strong>
+          <small>{statusText}</small>
+        </span>
       </button>
       <canvas
         ref={canvasRef}
@@ -226,10 +260,11 @@ function GameCanvas({
 
 type KeyBindingPanelProps = {
   disabled: boolean;
+  status: GameStatus;
   onKeyChange: (code: number, isDown: boolean) => void;
 };
 
-function KeyBindingPanel({ disabled, onKeyChange }: KeyBindingPanelProps) {
+function KeyBindingPanel({ disabled, status, onKeyChange }: KeyBindingPanelProps) {
   const releaseKey = useCallback(
     (code: number) => {
       onKeyChange(code, false);
@@ -242,6 +277,11 @@ function KeyBindingPanel({ disabled, onKeyChange }: KeyBindingPanelProps) {
       <div>
         <p className="eyebrow">Controls</p>
         <h2>Browser Keybinds</h2>
+        <p className="panel-note">
+          {status === "ready"
+            ? "Hold a button here or use your keyboard while the game is focused."
+            : "Start the game once to enable the browser control buttons."}
+        </p>
       </div>
 
       <div className="key-grid">
