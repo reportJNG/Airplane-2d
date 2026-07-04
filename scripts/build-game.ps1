@@ -7,6 +7,7 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $gameRoot = Join-Path $repoRoot "AirPlane Game"
 $outputRoot = Join-Path $repoRoot "public\game"
+$outputSoundsRoot = Join-Path $outputRoot "sounds"
 $cacheRoot = Join-Path $env:TEMP "airplane-raylib-web"
 $raylibZip = Join-Path $cacheRoot "raylib-$RaylibVersion`_webassembly.zip"
 $raylibRoot = Join-Path $cacheRoot "raylib-$RaylibVersion`_webassembly"
@@ -36,7 +37,7 @@ function Use-Emscripten {
   }
 }
 
-New-Item -ItemType Directory -Force -Path $cacheRoot, $outputRoot | Out-Null
+New-Item -ItemType Directory -Force -Path $cacheRoot, $outputRoot, $outputSoundsRoot | Out-Null
 
 if (-not (Test-Path $raylibZip)) {
   Write-Host "Downloading raylib $RaylibVersion WebAssembly package..."
@@ -92,5 +93,7 @@ Write-Host "Building Airplane Game WebAssembly..."
 if ($LASTEXITCODE -ne 0) {
   throw "emcc failed with exit code $LASTEXITCODE"
 }
+
+Copy-Item -Path (Join-Path $gameRoot "sounds\*.mp3") -Destination $outputSoundsRoot -Force
 
 Write-Host "Wrote public/game/airplane.js, airplane.wasm, and airplane.data"

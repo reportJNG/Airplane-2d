@@ -81,6 +81,33 @@ static Texture2D boss_rocket_texture;
 static Texture2D boss_health_textures[7];
 static Texture2D explosion_textures[6];
 
+#if defined(PLATFORM_WEB)
+typedef enum GameSound {
+  GAME_SOUND_PLAYER_SHOOT = 0,
+  GAME_SOUND_PLAYER_HEALED,
+  GAME_SOUND_ENEMY_SHOOT,
+  GAME_SOUND_HIT,
+  GAME_SOUND_PLAYER_EXPLOSION,
+  GAME_SOUND_ENEMY_EXPLOSION
+} GameSound;
+
+static const GameSound player_shoot_sound = GAME_SOUND_PLAYER_SHOOT;
+static const GameSound player_healed_sound = GAME_SOUND_PLAYER_HEALED;
+static const GameSound enemy_shoot_sound = GAME_SOUND_ENEMY_SHOOT;
+static const GameSound hit_sound = GAME_SOUND_HIT;
+static const GameSound player_explosion_sound = GAME_SOUND_PLAYER_EXPLOSION;
+static const GameSound enemy_explosion_sound = GAME_SOUND_ENEMY_EXPLOSION;
+
+EM_JS(void, PlayBrowserSound, (int sound_id), {
+  if (typeof window !== "undefined" && window.airplanePlaySound) {
+    window.airplanePlaySound(sound_id);
+  }
+});
+
+static void PlayGameSound(GameSound sound) {
+  PlayBrowserSound((int)sound);
+}
+#else
 static Sound player_shoot_sound;
 static Sound player_healed_sound;
 static Sound enemy_shoot_sound;
@@ -88,13 +115,8 @@ static Sound hit_sound;
 static Sound player_explosion_sound;
 static Sound enemy_explosion_sound;
 
-static void PlayGameSound(Sound sound) {
-#if !defined(PLATFORM_WEB)
-  PlaySound(sound);
-#else
-  (void)sound;
+static void PlayGameSound(Sound sound) { PlaySound(sound); }
 #endif
-}
 
 static PlayerState player;
 static EnemyState enemies[MAX_ENEMIES];

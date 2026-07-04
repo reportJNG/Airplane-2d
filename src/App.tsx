@@ -40,9 +40,25 @@ type KeyBinding = {
 declare global {
   interface Window {
     Module?: AirplaneModule;
+    airplanePlaySound?: (soundId: number) => void;
     airplaneGameScriptLoaded?: boolean;
+    webkitAudioContext?: typeof AudioContext;
   }
 }
+
+const airplaneSoundPaths = [
+  "/game/sounds/player-shoot.mp3",
+  "/game/sounds/player-healthed.mp3",
+  "/game/sounds/enemy-shoot.mp3",
+  "/game/sounds/hit.mp3",
+  "/game/sounds/player-explosion.mp3",
+  "/game/sounds/enemy-explosion.mp3",
+];
+
+let airplaneAudioContext: AudioContext | null = null;
+const airplaneAudioElements: HTMLAudioElement[] = [];
+const airplaneSoundBuffers: Array<AudioBuffer | null> = [];
+let airplaneSoundLoadPromise: Promise<void> | null = null;
 
 const keyBindings: KeyBinding[] = [
   { action: "Move left", code: 263, Icon: ArrowLeft, keys: "ArrowLeft / A" },
@@ -64,6 +80,65 @@ const browserHandledKeys = new Set([
   "d",
   "D",
 ]);
+
+function getAirplaneAudioContext() {
+  const AudioContextConstructor = window.AudioContext ?? window.webkitAudioContext;
+  if (!AudioContextConstructor) return null;
+
+  airplaneAudioContext ??= new AudioContextConstructor();
+  return airplaneAudioContext;
+}
+
+function loadAirplaneSounds() {
+  const context = getAirplaneAudioContext();
+  if (!context) return Promise.resolve();
+
+  airplaneSoundLoadPromise ??= Promise.all(
+    airplaneSoundPaths.map(async (path, index) => {
+      const response = await fetch(path);
+      const soundData = await response.arrayBuffer();
+      airplaneSoundBuffers[index] = await context.decodeAudioData(soundData);
+    }),
+  ).then(() => undefined);
+
+  return airplaneSoundLoadPromise;
+}
+
+async function unlockAirplaneAudio() {
+  const context = getAirplaneAudioContext();
+  if (!context) return;
+
+  if (context.state === "suspended") {
+    await context.resume();
+  }
+
+  void loadAirplaneSounds();
+}
+
+function playAirplaneSound(soundId: number) {
+  const context = getAirplaneAudioContext();
+  const buffer = airplaneSoundBuffers[soundId];
+  if (!context || !buffer) {
+    const path = airplaneSoundPaths[soundId];
+    if (!path) return;
+
+    airplaneAudioElements[soundId] ??= new Audio(path);
+    const audio = airplaneAudioElements[soundId].cloneNode() as HTMLAudioElement;
+    void audio.play();
+    return;
+  }
+
+  if (context.state === "suspended") {
+    void context.resume();
+  }
+
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  source.connect(context.destination);
+  source.start();
+}
+
+window.airplanePlaySound = playAirplaneSound;
 
 function App() {
   return <GameShell />;
@@ -108,6 +183,8 @@ function GameShell() {
       canvasRef.current?.focus();
       return;
     }
+
+    void unlockAirplaneAudio();
 
     setStatus("loading");
     setStatusText("Loading");
